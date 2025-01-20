@@ -58,7 +58,7 @@
                             "Action": ["s3:GetObject", "s3:ListBucket"],
                             "Resource": [
                                 { "Fn::GetAtt": ["CURBucket", "Arn"] },
-                                { "Fn::Sub": "${CURBucket.Arn}/*" }
+                                { "Fn::Join": ["", [{ "Fn::GetAtt": ["CURBucket", "Arn"] }, "/*"]] }
                             ]
                         }]
                     }
@@ -76,13 +76,11 @@
                     "RESOURCES",
                     "SPLIT_COST_ALLOCATION_DATA"
                 ],
-                "AdditionalArtifacts": [],
                 "RefreshClosedReports": true,
                 "ReportVersioning": "OVERWRITE_REPORT",
                 "S3Bucket": { "Ref": "CURBucket" },
                 "S3Prefix": "cur",
-                "S3Region": { "Ref": "AWS::Region" },
-                "BillingViewArn": { "Fn::Sub": "arn:aws:billing::${AWS::AccountId}:billingview/COST_AND_USAGE" }
+                "S3Region": { "Ref": "AWS::Region" }
             }
         }
     },
