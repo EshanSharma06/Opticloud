@@ -4,7 +4,7 @@
     "Parameters": {
         "ExternalId": {
             "Type": "String",
-            "Description": "External ID"
+            "Description": "External ID for secure access"
         }
     },
     "Resources": {
@@ -17,6 +17,15 @@
                     "BlockPublicPolicy": true,
                     "IgnorePublicAcls": true,
                     "RestrictPublicBuckets": true
+                },
+                "BucketEncryption": {
+                    "ServerSideEncryptionConfiguration": [
+                        {
+                            "ServerSideEncryptionByDefault": {
+                                "SSEAlgorithm": "AES256"
+                            }
+                        }
+                    ]
                 }
             }
         },
@@ -63,19 +72,27 @@
                 "TimeUnit": "HOURLY",
                 "Format": "Parquet",
                 "Compression": "Parquet",
+                "AdditionalSchemaElements": [
+                    "RESOURCES",
+                    "SPLIT_COST_ALLOCATION_DATA"
+                ],
+                "AdditionalArtifacts": [],
+                "RefreshClosedReports": true,
+                "ReportVersioning": "OVERWRITE_REPORT",
                 "S3Bucket": { "Ref": "CURBucket" },
                 "S3Prefix": "cur",
                 "S3Region": { "Ref": "AWS::Region" },
-                "RefreshClosedReports": true,
-                "ReportVersioning": "OVERWRITE_REPORT"
+                "BillingViewArn": { "Fn::Sub": "arn:aws:billing::${AWS::AccountId}:billingview/COST_AND_USAGE" }
             }
         }
     },
     "Outputs": {
         "RoleARN": {
+            "Description": "IAM Role ARN",
             "Value": { "Fn::GetAtt": ["OptiCloudRole", "Arn"] }
         },
         "BucketName": {
+            "Description": "S3 Bucket Name",
             "Value": { "Ref": "CURBucket" }
         }
     }
