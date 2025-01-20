@@ -1,0 +1,82 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "OptiCloud Integration",
+    "Parameters": {
+        "ExternalId": {
+            "Type": "String",
+            "Description": "External ID"
+        }
+    },
+    "Resources": {
+        "CURBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName": { "Fn::Sub": "opticloud-cur-${AWS::AccountId}" },
+                "PublicAccessBlockConfiguration": {
+                    "BlockPublicAcls": true,
+                    "BlockPublicPolicy": true,
+                    "IgnorePublicAcls": true,
+                    "RestrictPublicBuckets": true
+                }
+            }
+        },
+        "OptiCloudRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "RoleName": { "Fn::Sub": "OptiCloud-Role-${AWS::AccountId}" },
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Principal": {
+                            "AWS": { "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:root" }
+                        },
+                        "Action": "sts:AssumeRole",
+                        "Condition": {
+                            "StringEquals": {
+                                "sts:ExternalId": { "Ref": "ExternalId" }
+                            }
+                        }
+                    }]
+                },
+                "ManagedPolicyArns": ["arn:aws:iam::aws:policy/AWSBillingReadOnlyAccess"],
+                "Policies": [{
+                    "PolicyName": "CURAccess",
+                    "PolicyDocument": {
+                        "Version": "2012-10-17",
+                        "Statement": [{
+                            "Effect": "Allow",
+                            "Action": ["s3:GetObject", "s3:ListBucket"],
+                            "Resource": [
+                                { "Fn::GetAtt": ["CURBucket", "Arn"] },
+                                { "Fn::Sub": "${CURBucket.Arn}/*" }
+                            ]
+                        }]
+                    }
+                }]
+            }
+        },
+        "CUR": {
+            "Type": "AWS::CUR::ReportDefinition",
+            "Properties": {
+                "ReportName": { "Fn::Sub": "opticloud-cur-${AWS::AccountId}" },
+                "TimeUnit": "HOURLY",
+                "Format": "Parquet",
+                "Compression": "Parquet",
+                "S3Bucket": { "Ref": "CURBucket" },
+                "S3Prefix": "cur",
+                "S3Region": { "Ref": "AWS::Region" },
+                "RefreshClosedReports": true,
+                "ReportVersioning": "OVERWRITE_REPORT"
+            }
+        }
+    },
+    "Outputs": {
+        "RoleARN": {
+            "Value": { "Fn::GetAtt": ["OptiCloudRole", "Arn"] }
+        },
+        "BucketName": {
+            "Value": { "Ref": "CURBucket" }
+        }
+    }
+}
